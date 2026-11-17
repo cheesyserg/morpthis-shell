@@ -138,6 +138,7 @@
     <ClInclude Include="src\Expression\StatementExpression.h" />
     <ClInclude Include="src\Expression\LiteralExpression.h" />
     <ClInclude Include="src\Expression\Variable.h" />
+    <ClInclude Include="src\Include\BitmapCache.h" />
     <ClInclude Include="src\Include\Cache.h" />
     <ClInclude Include="src\Include\RegistryConfig.h" />
     <ClInclude Include="src\Include\Theme.h" />

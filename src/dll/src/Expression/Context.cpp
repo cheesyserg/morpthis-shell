@@ -2,11 +2,40 @@
 #include <Library/plutovg.h>
 #include <Library/plutosvg.h>
 #include <Library/PlutoVGWrap.h>
+#include "Include/BitmapCache.h"
 
 namespace Morpthis
 {
 	namespace Shell
 	{
+		// Cached loaders for menu images; see BitmapCache.h for ownership rules.
+		static HBITMAP cached_image(const wchar_t *path, long size, bool &shared)
+		{
+			return BitmapCache::get(BitmapCache::key(L'F', size, 0, path),
+									[&] { return Image::From(path, size); }, shared);
+		}
+
+		static HBITMAP cached_icon(const wchar_t *path, int id, long size, bool &shared)
+		{
+			return BitmapCache::get(BitmapCache::key(L'I', size, id, path),
+									[&] { return Image::FromHICON(path, id, size); }, shared);
+		}
+
+		static HBITMAP cached_svg(const string &value, bool from_file, long width, long height, bool &shared)
+		{
+			return BitmapCache::get(BitmapCache::key(from_file ? L'V' : L'S', width, height, value.c_str()),
+									[&]() -> HBITMAP
+									{
+										std::string vutf8 = std::move(string::ToUTF8(value, value.length<int>()));
+										PlutoVG plutovg;
+										if(from_file)
+											plutovg.load_from_file(vutf8.c_str(), width, height);
+										else
+											plutovg.load_from_memory(vutf8.c_str(), (int)vutf8.size(), width, height);
+										return plutovg ? plutovg.tobitmap() : nullptr;
+									}, shared);
+		}
+
 		struct RGBA
 		{
 			uint8_t b{};
@@ -678,14 +707,11 @@ namespace Morpthis
 						string value;
 						if(Eval(mii->image.expr, value) && !value.empty())
 						{
-							std::string vutf8 = std::move(string::ToUTF8(value, value.length<int>()));
-							PlutoVG plutovg;
-							plutovg.load_from_memory(vutf8.c_str(), (int)vutf8.size(), image_size, image_size);
-							if(plutovg)
+							bool shared = false;
+							if(auto hbitmap = cached_svg(value, false, image_size, image_size, shared); hbitmap)
 							{
-								//plutovg.rgba0();
-								image->hbitmap = plutovg.tobitmap();
-								image->inherited = false;
+								image->hbitmap = hbitmap;
+								image->inherited = shared;
 								image->import = ImageImport::SVG;
 								image->size = { image_size, image_size };
 								return true;
@@ -759,13 +785,11 @@ namespace Morpthis
 				if(is_svg(obj))
 				{
 					string value = obj.to_string().move();
-					std::string vutf8 = std::move(string::ToUTF8(value, value.length<int>()));
-					PlutoVG plutovg;
-					plutovg.load_from_memory(vutf8.c_str(), (int)vutf8.size(), width, height);
-					if(plutovg)
+					bool shared = false;
+					if(auto hbitmap = cached_svg(value, false, width, height, shared); hbitmap)
 					{
-						image->hbitmap = plutovg.tobitmap();
-						image->inherited = false;
+						image->hbitmap = hbitmap;
+						image->inherited = shared;
 						image->import = ImageImport::SVG;
 						image->size = { width, height };
 						return true;
@@ -796,7 +820,9 @@ namespace Morpthis
 					}
 					
 					image->destroy();
-					image->hbitmap = Image::From(path.c_str(), image_size);
+					bool shared = false;
+					image->hbitmap = cached_image(path.c_str(), image_size, shared);
+					image->inherited = shared;
 					if(image->hbitmap)
 					{
 						image->import = ImageImport::Image;
@@ -1033,18 +1059,11 @@ namespace Morpthis
 								if(!value.empty())
 								{
 									//std::string s = "<svg fill='none' viewBox='0 0 16 16'><path fill='#E0DFDF' fill-rule='evenodd' d='M1 3a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H3a2 2 0 01-2-2V3zm2-1a1 1 0 00-1 1v2a1 1 0 001 1h2a1 1 0 001-1V3a1 1 0 00-1-1H3zM9 3a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V3zm2-1a1 1 0 00-1 1v2a1 1 0 001 1h2a1 1 0 001-1V3a1 1 0 00-1-1h-2zM1 11a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H3a2 2 0 01-2-2v-2zm2-1a1 1 0 00-1 1v2a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 00-1-1H3zM9 11a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2zm2-1a1 1 0 00-1 1v2a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 00-1-1h-2z' clip-rule='evenodd'/></svg>";
-									std::string vutf8 = std::move(string::ToUTF8(value, value.length<int>()));
-									PlutoVG plutovg;
-									if(func.equals(IDENT_SVG))
-										plutovg.load_from_memory(vutf8.c_str(), (int)vutf8.size(), width, height);
-									else
-										plutovg.load_from_file(vutf8.c_str(), width, height);
-
-									if(plutovg)
+									bool shared = false;
+									if(auto hbitmap = cached_svg(value, !func.equals(IDENT_SVG), width, height, shared); hbitmap)
 									{
-										//plutovg.rgba0();
-										image->hbitmap = plutovg.tobitmap();
-										image->inherited = false;
+										image->hbitmap = hbitmap;
+										image->inherited = shared;
 										image->import = ImageImport::SVG;
 										image->size = { image_size, image_size };
 										return true;
@@ -1387,6 +1406,7 @@ namespace Morpthis
 										string sztype;
 										string target = p->Extension;
 										bool is_file = false;
+										bool shared = false;
 										
 										if(p->IsLink)
 										{
@@ -1405,14 +1425,14 @@ namespace Morpthis
 										{
 											if(target.equals({ L".exe", L".cmd", L".bat", L".com", L".scr" }))
 											//if(target.equals({L".exe", L".cmd", L".bat", L".com", L".scr"}))
-												image->hbitmap = Image::FromHICON(L"shell32.dll", 2, image_size);
+												image->hbitmap = cached_icon(L"shell32.dll", 2, image_size, shared);
 											else
 												sztype = target.move();
 										}
 										else 
 										{
 											//sztype = L"FOLDER";
-											image->hbitmap = Image::FromHICON(L"explorer.exe", 0, image_size);
+											image->hbitmap = cached_icon(L"explorer.exe", 0, image_size, shared);
 										}
 
 										if(!sztype.empty())
@@ -1424,11 +1444,12 @@ namespace Morpthis
 											if(hr.failed())
 												hr = ::AssocQueryStringW(ASSOCF_INIT_IGNOREUNKNOWN, ASSOCSTR_APPICONREFERENCE, sztype, nullptr, pszPath, &cbBufSize);
 											if(hr.succeeded())
-												image->hbitmap = Image::From(pszPath, image_size);
+												image->hbitmap = cached_image(pszPath, image_size, shared);
 										}
 
 										if(image->hbitmap)
 										{
+											image->inherited = shared;
 											image->import = ImageImport::Image;
 											image->size = { image_size, image_size };
 											return true;
@@ -1521,10 +1542,12 @@ namespace Morpthis
 
 								if(!icon_path.empty())
 								{
+									bool shared = false;
 									if(func.equals(IDENT_ICON) || argc > 1)
-										image->hbitmap = Image::FromHICON(icon_path.c_str(), icon_id, image_size);
+										image->hbitmap = cached_icon(icon_path.c_str(), icon_id, image_size, shared);
 									else
-										image->hbitmap = Image::From(icon_path.c_str(), image_size);
+										image->hbitmap = cached_image(icon_path.c_str(), image_size, shared);
+									image->inherited = shared;
 									
 									if(image->hbitmap)
 									{
