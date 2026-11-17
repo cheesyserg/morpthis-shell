@@ -2,6 +2,7 @@
 #include <pch.h>
 #include "Include\Hooker.h"
 #include "Include/ContextMenu.h"
+#include "Include/BitmapCache.h"
 
 namespace Morpthis
 {
@@ -165,6 +166,10 @@ namespace Morpthis
 				Logger::Exception(__func__);
 #endif
 			}
+
+			// Cached menu bitmaps are tied to the loaded config (theme image size, paths);
+			// drop them together with it so a reload picks up changed icons.
+			BitmapCache::clear();
 
 			Status.Loaded = false;
 			Status.Refresh = false;

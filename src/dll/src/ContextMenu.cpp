@@ -2,6 +2,7 @@
 #include <pch.h>
 #include "Include/Theme.h"
 #include "Include/ContextMenu.h"
+#include "Include/BitmapCache.h"
 #include "Include/stb_image_write.h"
 
 using namespace Morpthis::Diagnostics;
@@ -597,10 +598,14 @@ namespace Morpthis
 													//this will identify the image in the cache as "used" or "active".
 													if(auto n = Path::Extension(path); n.length() == 0)
 														path += L".exe";
-													mii->image.hbitmap = Image::From(path.c_str(), _theme.image.size);
-													mii->image.size = {(long) _theme.image.size ,(long)_theme.image.size };
+													// Command icons (cmd.exe, explorer, powershell, app paths) are cached across popups.
+													const long image_size = (long)_theme.image.size;
+													bool shared = false;
+													mii->image.hbitmap = BitmapCache::get(BitmapCache::key(L'F', image_size, 0, path.c_str()),
+														[&] { return Image::From(path.c_str(), image_size); }, shared);
+													mii->image.size = { image_size, image_size };
 													mii->image.import = ImageImport::Image;
-													mii->image.inherited = false;
+													mii->image.inherited = shared;
 												}
 											}
 										}

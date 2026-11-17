@@ -131,6 +131,9 @@
     <ClInclude Include="src\Expression\Context.h">
       <Filter>Header Files\Expression</Filter>
     </ClInclude>
+    <ClInclude Include="src\Include\BitmapCache.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\Include\Cache.h">
       <Filter>Header Files</Filter>
     </ClInclude>
