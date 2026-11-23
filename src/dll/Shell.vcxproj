@@ -140,6 +140,7 @@
     <ClInclude Include="src\Expression\Variable.h" />
     <ClInclude Include="src\Include\BitmapCache.h" />
     <ClInclude Include="src\Include\Cache.h" />
+    <ClInclude Include="src\Include\MenuFade.h" />
     <ClInclude Include="src\Include\RegistryConfig.h" />
     <ClInclude Include="src\Include\Theme.h" />
     <ClInclude Include="src\Include\Keyboard.h" />

@@ -14,6 +14,7 @@ constexpr auto Windows_UI_FileExplorer = L"Windows.UI.FileExplorer.dll";
 #include "Include/Theme.h"
 #include <Library/PlutoVGWrap.h>
 #include "Include/Tip.h"
+#include "Include/MenuFade.h"
 #include <stack>
 
 #define MF_ALLSTATE         0x00FF
@@ -181,6 +182,7 @@ namespace Morpthis
 			ContextMenu *ctx{};
 
 			HWND dr = 0;
+			HWND fade{}; // fade-in overlay (MenuFade), while it runs
 
 			D2D d2d;
 			WND(HWND hWnd = nullptr) : handle{ hWnd }
@@ -191,6 +193,7 @@ namespace Morpthis
 			void destroy()
 			{
 				//cs.unlock();
+				MenuFade::stop(fade);
 				blurry.destroy();
 				layer.destroy();
 				if(hbitmap) ::DeleteObject(hbitmap);
@@ -202,6 +205,7 @@ namespace Morpthis
 			void hidden()
 			{
 				//ShowWindowAsync()
+				MenuFade::stop(fade);
 				blurry.hidden();
 				layer.hidden();
 				if(handle)

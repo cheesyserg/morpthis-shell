@@ -5350,6 +5350,14 @@ namespace Morpthis
 			auto w = wnd->width - border - border;
 			auto h = wnd->height - border - border;
 
+			// Fade the menu in (the window isn't visible yet, so the snapshot shows what's behind it).
+			if(!wnd->fade && MenuFade::enabled())
+			{
+				wnd->fade = MenuFade::start(wnd->handle, {
+					wnd->x - margin, wnd->y - margin,
+					wnd->x - margin + size.cx, wnd->y - margin + size.cy });
+			}
+
 			// Blurry is not useful in high contrast mode
 			if(composition &&
 			   _theme.background.effect >= 2 &&

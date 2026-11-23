@@ -1119,6 +1119,7 @@ BOOL APIENTRY DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID)
 				//_CoCreateInstance.unhook();
 
 				ContextMenu::UnRegisterLayer();
+				MenuFade::unregister();
 			}
 
 			taskbar_t::_IUIAutomation.release();
